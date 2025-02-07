@@ -1,0 +1,17 @@
+openapi: 3.0.0
+info:
+  title: Ethereum Block Indexer API
+  version: "1.0"
+servers:
+  - url: http://localhost:7000
+paths:
+  /v1/block:
+    $ref: './block/responses/block_response.yml#/paths/~1v1~1block'
+  /v1/transaction:
+    $ref: './transaction/responses/transaction_response.yml#/paths/~1v1~1transaction'
+components:
+  schemas:
+    Block:
+      $ref: './schemas/responses/block_schema.yml#/components/schemas/Block'
+    Transaction:
+      $ref: './schemas/responses/transaction_schema.yml#/components/schemas/Transaction'

@@ -1,0 +1,76 @@
+openapi: 3.0.0
+info:
+  title: Ethereum Block Indexer API
+  version: '1.0'
+servers:
+  - url: http://localhost:7000
+paths:
+  /v1/block:
+    get:
+      summary: Get block data by block number.
+      operationId: GetBlock
+      parameters:
+        - name: number
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Successful response with block data.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Block'
+  /v1/transaction:
+    get:
+      summary: Get transaction data by transaction hash.
+      operationId: GetTransaction
+      parameters:
+        - name: hash
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response with transaction data.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Transaction'
+components:
+  schemas:
+    Block:
+      type: object
+      properties:
+        number:
+          type: integer
+          example: 12345678
+        hash:
+          type: string
+          example: 0xdummyhash
+        parentHash:
+          type: string
+          example: 0xdummyparent
+        timestamp:
+          type: integer
+          example: 1630000000
+    Transaction:
+      type: object
+      properties:
+        hash:
+          type: string
+          example: 0xdummytxhash
+        from:
+          type: string
+          example: 0xfromaddress
+        to:
+          type: string
+          example: 0xtoaddress
+        value:
+          type: string
+          example: '1000000000000000000'
+        blockNumber:
+          type: integer
+          example: 12345678

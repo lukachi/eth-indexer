@@ -1,0 +1,20 @@
+paths:
+  /v1/transaction:
+    get:
+      summary: Get transaction data by transaction hash.
+      operationId: GetTransaction
+      parameters:
+        - name: hash
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response with transaction data.
+          content:
+            application/json:
+              schema:
+                $ref: '../../schemas/responses/transaction_schema.yml#/components/schemas/Transaction'
+components:
+  schemas: {}

@@ -1,0 +1,17 @@
+components:
+  schemas:
+    Block:
+      type: object
+      properties:
+        number:
+          type: integer
+          example: 12345678
+        hash:
+          type: string
+          example: "0xdummyhash"
+        parentHash:
+          type: string
+          example: "0xdummyparent"
+        timestamp:
+          type: integer
+          example: 1630000000

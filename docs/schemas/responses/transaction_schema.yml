@@ -1,0 +1,20 @@
+components:
+  schemas:
+    Transaction:
+      type: object
+      properties:
+        hash:
+          type: string
+          example: "0xdummytxhash"
+        from:
+          type: string
+          example: "0xfromaddress"
+        to:
+          type: string
+          example: "0xtoaddress"
+        value:
+          type: string
+          example: "1000000000000000000"
+        blockNumber:
+          type: integer
+          example: 12345678

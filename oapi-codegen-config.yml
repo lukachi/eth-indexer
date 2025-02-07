@@ -1,0 +1,5 @@
+package: resources
+generate:
+  - gin-server
+  - models
+  - types
