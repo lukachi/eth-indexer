@@ -1,6 +1,9 @@
 package config
 
 import (
+	"github.com/joho/godotenv"
+	"log"
+
 	"os"
 )
 
@@ -14,6 +17,11 @@ type Config struct {
 }
 
 func Load() Config {
+	err := godotenv.Load(".env")
+	if err != nil {
+		log.Fatalf("Error loading .env file: %v", err)
+	}
+
 	return Config{
 		RPCUrl:     os.Getenv("RPCUrl"),
 		DBUser:     os.Getenv("DB_USER"),

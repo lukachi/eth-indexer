@@ -14,34 +14,34 @@ type Server struct {
 	DB *db.DB
 }
 
-// For MVP, convert number parameter to integer.
-func ptr(s string) *string {
-	return &s
-}
-
 // Implement the generated handler interfaces.
 func (s *Server) GetBlock(c *gin.Context, params openapi.GetBlockParams) {
-	// Example: fetch block from DB (dummy response for now)
-	number := params.Number
-	timestamp := 1630000000
-
+	// Dummy response
 	c.JSON(http.StatusOK, openapi.Block{
-		Number:     &number,
-		Hash:       ptr("0xdummyhash"),
-		ParentHash: ptr("0xdummyparent"),
-		Timestamp:  &timestamp,
+		Id:   "12341234",
+		Type: "block",
+		Attributes: openapi.BlockAttributes{
+			Hash:       "0x8758765f78657f65",
+			Number:     1234,
+			ParentHash: "0x781234617236",
+			Timestamp:  123412341234,
+		},
 	})
 }
 
 func (s *Server) GetTransaction(c *gin.Context, params openapi.GetTransactionParams) {
-	blockNumber := 12345678
-	// Dummy response using params.Hash.
+	// Dummy response
 	c.JSON(http.StatusOK, openapi.Transaction{
-		Hash:        &params.Hash,
-		From:        ptr("0xfromaddress"),
-		To:          ptr("0xtoaddress"),
-		Value:       ptr("1000000000000000000"),
-		BlockNumber: &blockNumber,
+		Id:   "12341234",
+		Type: "transaction",
+		Attributes: openapi.TransactionAttributes{
+			BlockNumber: 1234,
+			From:        "0x12341234",
+			Hash:        "0x12341234",
+			Timestamp:   12341234,
+			To:          "0x12341234",
+			Value:       "12341234",
+		},
 	})
 }
 
@@ -49,5 +49,5 @@ func StartServer(database *db.DB) {
 	s := &Server{DB: database}
 	router := gin.Default()
 	openapi.RegisterHandlers(router, s)
-	router.Run(":7000")
+	router.Run(":8089")
 }

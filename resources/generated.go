@@ -13,38 +13,53 @@ import (
 
 // Block defines model for Block.
 type Block struct {
-	Hash       *string `json:"hash,omitempty"`
-	Number     *int    `json:"number,omitempty"`
-	ParentHash *string `json:"parentHash,omitempty"`
-	Timestamp  *int    `json:"timestamp,omitempty"`
+	Attributes BlockAttributes `json:"attributes"`
+	Id         string          `json:"id"`
+	Type       string          `json:"type"`
+}
+
+// BlockAttributes defines model for BlockAttributes.
+type BlockAttributes struct {
+	Hash       string  `json:"hash"`
+	Number     float32 `json:"number"`
+	ParentHash string  `json:"parentHash"`
+	Timestamp  float32 `json:"timestamp"`
 }
 
 // Transaction defines model for Transaction.
 type Transaction struct {
-	BlockNumber *int    `json:"blockNumber,omitempty"`
-	From        *string `json:"from,omitempty"`
-	Hash        *string `json:"hash,omitempty"`
-	To          *string `json:"to,omitempty"`
-	Value       *string `json:"value,omitempty"`
+	Attributes TransactionAttributes `json:"attributes"`
+	Id         string                `json:"id"`
+	Type       string                `json:"type"`
+}
+
+// TransactionAttributes defines model for TransactionAttributes.
+type TransactionAttributes struct {
+	BlockNumber float32 `json:"blockNumber"`
+	From        string  `json:"from"`
+	Hash        string  `json:"hash"`
+	Timestamp   float32 `json:"timestamp"`
+	To          string  `json:"to"`
+	Value       string  `json:"value"`
 }
 
 // GetBlockParams defines parameters for GetBlock.
 type GetBlockParams struct {
-	Number int `form:"number" json:"number"`
+	Number *string `form:"number,omitempty" json:"number,omitempty"`
 }
 
 // GetTransactionParams defines parameters for GetTransaction.
 type GetTransactionParams struct {
-	Hash string `form:"hash" json:"hash"`
+	Hash *string `form:"hash,omitempty" json:"hash,omitempty"`
 }
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
-	// Get block data by block number.
-	// (GET /v1/block)
+
+	// (GET /block)
 	GetBlock(c *gin.Context, params GetBlockParams)
-	// Get transaction data by transaction hash.
-	// (GET /v1/transaction)
+
+	// (GET /transaction)
 	GetTransaction(c *gin.Context, params GetTransactionParams)
 }
 
@@ -65,16 +80,9 @@ func (siw *ServerInterfaceWrapper) GetBlock(c *gin.Context) {
 	// Parameter object where we will unmarshal all parameters from the context
 	var params GetBlockParams
 
-	// ------------- Required query parameter "number" -------------
+	// ------------- Optional query parameter "number" -------------
 
-	if paramValue := c.Query("number"); paramValue != "" {
-
-	} else {
-		siw.ErrorHandler(c, fmt.Errorf("Query argument number is required, but not found"), http.StatusBadRequest)
-		return
-	}
-
-	err = runtime.BindQueryParameter("form", true, true, "number", c.Request.URL.Query(), &params.Number)
+	err = runtime.BindQueryParameter("form", true, false, "number", c.Request.URL.Query(), &params.Number)
 	if err != nil {
 		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter number: %w", err), http.StatusBadRequest)
 		return
@@ -98,16 +106,9 @@ func (siw *ServerInterfaceWrapper) GetTransaction(c *gin.Context) {
 	// Parameter object where we will unmarshal all parameters from the context
 	var params GetTransactionParams
 
-	// ------------- Required query parameter "hash" -------------
+	// ------------- Optional query parameter "hash" -------------
 
-	if paramValue := c.Query("hash"); paramValue != "" {
-
-	} else {
-		siw.ErrorHandler(c, fmt.Errorf("Query argument hash is required, but not found"), http.StatusBadRequest)
-		return
-	}
-
-	err = runtime.BindQueryParameter("form", true, true, "hash", c.Request.URL.Query(), &params.Hash)
+	err = runtime.BindQueryParameter("form", true, false, "hash", c.Request.URL.Query(), &params.Hash)
 	if err != nil {
 		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter hash: %w", err), http.StatusBadRequest)
 		return
@@ -150,6 +151,6 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 		ErrorHandler:       errorHandler,
 	}
 
-	router.GET(options.BaseURL+"/v1/block", wrapper.GetBlock)
-	router.GET(options.BaseURL+"/v1/transaction", wrapper.GetTransaction)
+	router.GET(options.BaseURL+"/block", wrapper.GetBlock)
+	router.GET(options.BaseURL+"/transaction", wrapper.GetTransaction)
 }

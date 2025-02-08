@@ -16,9 +16,10 @@ if ! command -v npx >/dev/null 2>&1; then
 fi
 
 # Define paths.
-DOCS_MASTER="./docs/openapi.yml"
-OUTPUT_YAML="./resources/openapi.yml"
-OUTPUT_GO="./resources/openapi_generated.go"
+#DOCS_MASTER="./docs/spec/openapi.yml"
+DOCS_MASTER="http://localhost:3000/api"
+OUTPUT_YAML="./docs/build/openapi.yml"
+OUTPUT_GO="./resources/generated.go"
 OAPI_CONFIG="./oapi-codegen-config.yml"
 
 # Ensure the resources folder exists.
