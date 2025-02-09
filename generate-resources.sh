@@ -15,9 +15,23 @@ if ! command -v npx >/dev/null 2>&1; then
     exit 1
 fi
 
-# Define paths.
-#DOCS_MASTER="http://localhost:3000/api"
-OUTPUT_YAML="./docs/tsp-output/@typespec/openapi3/openapi.yaml"
+# Extract the version from docs/package.json
+PACKAGE_JSON="./docs/package.json"
+
+if [ -f "$PACKAGE_JSON" ]; then
+    VERSION=$(grep '"version"' "$PACKAGE_JSON" | sed -E 's/.*"version": *"([^"]+)".*/\1/')
+    if [ -n "$VERSION" ]; then
+        echo "Version extracted from docs/package.json: $VERSION"
+    else
+        echo "Error: Version could not be extracted from docs/package.json"
+        exit 1
+    fi
+else
+    echo "Error: docs/package.json does not exist."
+    exit 1
+fi
+
+OUTPUT_YAML="./docs/tsp-output/@typespec/openapi3/openapi.${VERSION}.yaml"
 OUTPUT_GO="./resources/generated.go"
 OAPI_CONFIG="./oapi-codegen-config.yml"
 
