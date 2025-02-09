@@ -1,4 +1,4 @@
-import {ApiOperation, ApiParam, ApiProperty, ApiResponse} from "openapi-metadata/decorators";
+import {ApiOperation, ApiProperty, ApiQuery, ApiResponse} from "openapi-metadata/decorators";
 
 class TransactionAttributes {
     @ApiProperty({ type: "string" })
@@ -30,9 +30,8 @@ export default class TransactionsController {
         path: "/transaction",
         summary: ""
     })
-    @ApiParam({
+    @ApiQuery({
         name: "hash",
-        in: "query"
     })
     @ApiResponse({ type: [Transaction] })
     async getTransaction() {}

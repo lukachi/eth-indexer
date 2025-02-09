@@ -1,4 +1,4 @@
-import {ApiOperation, ApiParam, ApiProperty, ApiResponse} from "openapi-metadata/decorators";
+import {ApiOperation, ApiProperty, ApiQuery, ApiResponse} from "openapi-metadata/decorators";
 
 class BlockAttributes {
     @ApiProperty({type: "number", example: 123456})
@@ -26,9 +26,8 @@ export default class BlocksController {
         path: "/block",
         summary: ""
     })
-    @ApiParam({
-        name: 'number',
-        in: 'query'
+    @ApiQuery({
+        name: 'number'
     })
     @ApiResponse({ type: Block })
     async getBlock() {
