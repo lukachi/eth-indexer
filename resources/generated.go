@@ -11,56 +11,68 @@ import (
 	"github.com/oapi-codegen/runtime"
 )
 
+// Defines values for BlockNotFoundErrorCode.
+const (
+	BLOCKNOTFOUND BlockNotFoundErrorCode = "BLOCK_NOT_FOUND"
+)
+
+// Defines values for TransactionNotFoundErrorCode.
+const (
+	TRANSACTIONNOTFOUND TransactionNotFoundErrorCode = "TRANSACTION_NOT_FOUND"
+)
+
 // Block defines model for Block.
 type Block struct {
-	Attributes BlockAttributes `json:"attributes"`
-	Id         string          `json:"id"`
-	Type       string          `json:"type"`
+	Attributes struct {
+		Hash       string `json:"hash"`
+		Number     int    `json:"number"`
+		ParentHash string `json:"parentHash"`
+		Timestamp  int    `json:"timestamp"`
+	} `json:"attributes"`
+	Id   string `json:"id"`
+	Type string `json:"type"`
 }
 
-// BlockAttributes defines model for BlockAttributes.
-type BlockAttributes struct {
-	Hash       string  `json:"hash"`
-	Number     float32 `json:"number"`
-	ParentHash string  `json:"parentHash"`
-	Timestamp  float32 `json:"timestamp"`
+// BlockNotFoundError defines model for BlockNotFoundError.
+type BlockNotFoundError struct {
+	Code    BlockNotFoundErrorCode `json:"code"`
+	Message string                 `json:"message"`
 }
+
+// BlockNotFoundErrorCode defines model for BlockNotFoundError.Code.
+type BlockNotFoundErrorCode string
 
 // Transaction defines model for Transaction.
 type Transaction struct {
-	Attributes TransactionAttributes `json:"attributes"`
-	Id         string                `json:"id"`
-	Type       string                `json:"type"`
+	Attributes struct {
+		BlockNumber int    `json:"blockNumber"`
+		From        string `json:"from"`
+		Hash        string `json:"hash"`
+		Timestamp   int    `json:"timestamp"`
+		To          string `json:"to"`
+		Value       string `json:"value"`
+	} `json:"attributes"`
+	Id   string `json:"id"`
+	Type string `json:"type"`
 }
 
-// TransactionAttributes defines model for TransactionAttributes.
-type TransactionAttributes struct {
-	BlockNumber float32 `json:"blockNumber"`
-	From        string  `json:"from"`
-	Hash        string  `json:"hash"`
-	Timestamp   float32 `json:"timestamp"`
-	To          string  `json:"to"`
-	Value       string  `json:"value"`
+// TransactionNotFoundError defines model for TransactionNotFoundError.
+type TransactionNotFoundError struct {
+	Code    TransactionNotFoundErrorCode `json:"code"`
+	Message string                       `json:"message"`
 }
 
-// GetBlockParams defines parameters for GetBlock.
-type GetBlockParams struct {
-	Number *string `form:"number,omitempty" json:"number,omitempty"`
-}
-
-// GetTransactionParams defines parameters for GetTransaction.
-type GetTransactionParams struct {
-	Hash *string `form:"hash,omitempty" json:"hash,omitempty"`
-}
+// TransactionNotFoundErrorCode defines model for TransactionNotFoundError.Code.
+type TransactionNotFoundErrorCode string
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 
-	// (GET /block)
-	GetBlock(c *gin.Context, params GetBlockParams)
+	// (GET /blocks/{blockId})
+	BlocksGetBlock(c *gin.Context, blockId string)
 
-	// (GET /transaction)
-	GetTransaction(c *gin.Context, params GetTransactionParams)
+	// (GET /transactions/{transactionId})
+	TransactionsGetTransaction(c *gin.Context, transactionId string)
 }
 
 // ServerInterfaceWrapper converts contexts to parameters.
@@ -72,19 +84,17 @@ type ServerInterfaceWrapper struct {
 
 type MiddlewareFunc func(c *gin.Context)
 
-// GetBlock operation middleware
-func (siw *ServerInterfaceWrapper) GetBlock(c *gin.Context) {
+// BlocksGetBlock operation middleware
+func (siw *ServerInterfaceWrapper) BlocksGetBlock(c *gin.Context) {
 
 	var err error
 
-	// Parameter object where we will unmarshal all parameters from the context
-	var params GetBlockParams
+	// ------------- Path parameter "blockId" -------------
+	var blockId string
 
-	// ------------- Optional query parameter "number" -------------
-
-	err = runtime.BindQueryParameter("form", true, false, "number", c.Request.URL.Query(), &params.Number)
+	err = runtime.BindStyledParameterWithOptions("simple", "blockId", c.Param("blockId"), &blockId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
 	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter number: %w", err), http.StatusBadRequest)
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter blockId: %w", err), http.StatusBadRequest)
 		return
 	}
 
@@ -95,22 +105,20 @@ func (siw *ServerInterfaceWrapper) GetBlock(c *gin.Context) {
 		}
 	}
 
-	siw.Handler.GetBlock(c, params)
+	siw.Handler.BlocksGetBlock(c, blockId)
 }
 
-// GetTransaction operation middleware
-func (siw *ServerInterfaceWrapper) GetTransaction(c *gin.Context) {
+// TransactionsGetTransaction operation middleware
+func (siw *ServerInterfaceWrapper) TransactionsGetTransaction(c *gin.Context) {
 
 	var err error
 
-	// Parameter object where we will unmarshal all parameters from the context
-	var params GetTransactionParams
+	// ------------- Path parameter "transactionId" -------------
+	var transactionId string
 
-	// ------------- Optional query parameter "hash" -------------
-
-	err = runtime.BindQueryParameter("form", true, false, "hash", c.Request.URL.Query(), &params.Hash)
+	err = runtime.BindStyledParameterWithOptions("simple", "transactionId", c.Param("transactionId"), &transactionId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
 	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter hash: %w", err), http.StatusBadRequest)
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter transactionId: %w", err), http.StatusBadRequest)
 		return
 	}
 
@@ -121,7 +129,7 @@ func (siw *ServerInterfaceWrapper) GetTransaction(c *gin.Context) {
 		}
 	}
 
-	siw.Handler.GetTransaction(c, params)
+	siw.Handler.TransactionsGetTransaction(c, transactionId)
 }
 
 // GinServerOptions provides options for the Gin server.
@@ -151,6 +159,6 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 		ErrorHandler:       errorHandler,
 	}
 
-	router.GET(options.BaseURL+"/block", wrapper.GetBlock)
-	router.GET(options.BaseURL+"/transaction", wrapper.GetTransaction)
+	router.GET(options.BaseURL+"/blocks/:blockId", wrapper.BlocksGetBlock)
+	router.GET(options.BaseURL+"/transactions/:transactionId", wrapper.TransactionsGetTransaction)
 }

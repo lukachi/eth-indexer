@@ -1,24 +1,22 @@
 {
   "name": "docs",
-  "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
+  "type": "module",
   "scripts": {
-    "dev": "nodemon -w src/server -x tsx src/server/main.ts",
-    "start": "NODE_ENV=production tsx src/server/main.ts",
-    "build": "vite build"
+    "build": "tsp compile .",
+    "lint": "spectral lint tsp-output/@typespec/openapi3/openapi.yaml"
+  },
+  "peerDependencies": {
+    "@typespec/compiler": "latest",
+    "@typespec/http": "latest",
+    "@typespec/rest": "latest",
+    "@typespec/openapi3": "latest"
   },
   "devDependencies": {
-    "@types/express": "^4.17.15",
-    "@types/node": "^20.9.3",
-    "nodemon": "^3.0.1",
-    "vite": "^5.0.2"
+    "@typespec/compiler": "latest",
+    "@typespec/http": "latest",
+    "@typespec/rest": "latest",
+    "@typespec/openapi3": "latest"
   },
-  "dependencies": {
-    "express": "^4.18.2",
-    "openapi-metadata": "^0.2.0",
-    "reflect-metadata": "^0.2.2",
-    "tsx": "^4.5.0",
-    "typescript": "^5.3.2",
-    "vite-express": "*"
-  }
+  "private": true
 }

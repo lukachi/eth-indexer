@@ -16,18 +16,17 @@ if ! command -v npx >/dev/null 2>&1; then
 fi
 
 # Define paths.
-#DOCS_MASTER="./docs/spec/openapi.yml"
-DOCS_MASTER="http://localhost:3000/api"
-OUTPUT_YAML="./docs/build/openapi.yml"
+#DOCS_MASTER="http://localhost:3000/api"
+OUTPUT_YAML="./docs/tsp-output/@typespec/openapi3/openapi.yaml"
 OUTPUT_GO="./resources/generated.go"
 OAPI_CONFIG="./oapi-codegen-config.yml"
 
 # Ensure the resources folder exists.
 mkdir -p ./resources
 
-# Bundle the OpenAPI spec using Redocly's bundle command.
-npx @redocly/cli bundle "$DOCS_MASTER" -o "$OUTPUT_YAML"
-echo "Bundled OpenAPI spec to $OUTPUT_YAML"
+## Bundle the OpenAPI spec using Redocly's bundle command.
+#npx @redocly/cli bundle "$DOCS_MASTER" -o "$OUTPUT_YAML"
+#echo "Bundled OpenAPI spec to $OUTPUT_YAML"
 
 # Generate Go resources using oapi-codegen.
 oapi-codegen --config="$OAPI_CONFIG" "$OUTPUT_YAML" > "$OUTPUT_GO"

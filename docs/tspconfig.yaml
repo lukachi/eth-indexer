@@ -1,0 +1,6 @@
+parameters:
+  base-dir:
+    default: "./src"
+
+emit:
+  - "@typespec/openapi3"
