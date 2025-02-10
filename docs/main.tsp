@@ -11,6 +11,7 @@ using TypeSpec.Http;
 using TypeSpec.Versioning;
 using TypeSpec.Rest;
 using TypeSpec.OpenAPI;
+
 @service({
     title: "Eth indexer svc",
     description: "Service for indexing eth blocks and transactions",
