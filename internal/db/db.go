@@ -1,45 +1,33 @@
 package db
 
 import (
+	"database/sql"
 	"fmt"
-	"github.com/jmoiron/sqlx"
+
+	"github.com/Masterminds/squirrel"
 	_ "github.com/lib/pq"
 )
 
 type DB struct {
-	Conn *sqlx.DB
+	Conn       *sql.DB
+	SqlBuilder squirrel.StatementBuilderType
 }
 
+// ConnectDB initializes a standard *sql.DB and also sets up a squirrel builder.
 func ConnectDB(user, password, host, port, dbname string) (*DB, error) {
 	dsn := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable", user, password, host, port, dbname)
-	conn, err := sqlx.Connect("postgres", dsn)
+	conn, err := sql.Open("postgres", dsn)
 	if err != nil {
 		return nil, err
 	}
-	return &DB{Conn: conn}, nil
-}
-
-func (db *DB) CreateTables() error {
-	blockTable := `
-      CREATE TABLE IF NOT EXISTS blocks (
-          number BIGINT PRIMARY KEY,
-          hash TEXT,
-          parent_hash TEXT,
-          timestamp BIGINT
-      );`
-	txTable := `
-      CREATE TABLE IF NOT EXISTS transactions (
-          hash TEXT PRIMARY KEY,
-          "from" TEXT,
-          "to" TEXT,
-          value TEXT,
-          block_number BIGINT REFERENCES blocks(number)
-      );`
-	if _, err := db.Conn.Exec(blockTable); err != nil {
-		return err
+	// Optionally, you might want to ping to check the connection:
+	if err := conn.Ping(); err != nil {
+		return nil, err
 	}
-	if _, err := db.Conn.Exec(txTable); err != nil {
-		return err
-	}
-	return nil
+	// Initialize the squirrel builder with the connection placeholder (using dollar-sign placeholders for PostgreSQL).
+	builder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar)
+	return &DB{
+		Conn:       conn,
+		SqlBuilder: builder,
+	}, nil
 }

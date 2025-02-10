@@ -17,9 +17,6 @@ func main() {
 	if err != nil {
 		log.Fatalf("DB connection error: %v", err)
 	}
-	if err := database.CreateTables(); err != nil {
-		log.Fatalf("Failed to create tables: %v", err)
-	}
 
 	ethClient, err := ethclient.Dial(cfg.RPCUrl)
 	if err != nil {
