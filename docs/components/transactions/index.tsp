@@ -3,17 +3,19 @@ using TypeSpec.Http;
 
 namespace EthIndexer;
 
+model TransactionAttributes {
+    blockNumber: integer;
+    hash: string;
+    from: string;
+    to: string;
+    value: string;
+    timestamp: integer;
+}
+
 model Transaction {
     id: string;
     type: string;
-    attributes: {
-        blockNumber: integer;
-        hash: string;
-        from: string;
-        to: string;
-        value: string;
-        timestamp: integer;
-    }
+    attributes: TransactionAttributes;
 }
 
 @route("/transactions")

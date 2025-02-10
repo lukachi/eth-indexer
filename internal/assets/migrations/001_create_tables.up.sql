@@ -13,5 +13,6 @@ CREATE TABLE IF NOT EXISTS transactions (
     "to" TEXT NOT NULL,
     value TEXT NOT NULL,
     block_number BIGINT NOT NULL,
+    timestamp BIGINT NOT NULL,
     CONSTRAINT fk_block FOREIGN KEY (block_number) REFERENCES blocks(number)
 );

@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"lukachi/eth-indexer/internal/db"
+	"lukachi/eth-indexer/internal/db/models"
 	"math/big"
 	"time"
 
@@ -29,13 +30,50 @@ func StartIndexer(client *ethclient.Client, database *db.DB) {
 }
 
 func processBlock(number uint64, client *ethclient.Client, database *db.DB) {
+	ctx := context.Background()
 	blockNumber := big.NewInt(0).SetUint64(number)
-	_, err := client.BlockByNumber(context.Background(), blockNumber)
+
+	// Fetch the block from the Ethereum node.
+	block, err := client.BlockByNumber(ctx, blockNumber)
 	if err != nil {
 		log.Printf("Failed to fetch block %d: %v\n", number, err)
 		return
 	}
-	// Extract fields (number, hash, parent hash, timestamp) and insert into DB.
-	// (InsertBlock(database, block) - implementation omitted for brevity)
-	log.Printf("Processed block %d\n", number)
+
+	// Extract fields from the Ethereum block.
+	// (You might want to use more robust parsing depending on your use case)
+	num := block.NumberU64()
+	hash := block.Hash().Hex()
+	parentHash := block.ParentHash().Hex()
+	timestamp := block.Time() // UNIX timestamp
+
+	// Create an instance of your xo-generated Block model.
+	newBlock := models.Block{
+		Number:     int64(num),
+		Hash:       hash,
+		ParentHash: parentHash,
+		Timestamp:  int64(timestamp),
+	}
+
+	// Use Upsert (or Save) to insert/update the block in the DB.
+	if err := newBlock.Upsert(ctx, database.Conn); err != nil {
+		log.Printf("Failed to upsert block %d: %v\n", number, err)
+		return
+	}
+
+	log.Printf("Processed and saved block %d\n", number)
+
+	// Optionally, if you want to process transactions in the block:
+	for _, tx := range block.Transactions() {
+		// Extract tx fields and create a new models.Transaction
+		newTx := models.Transaction{
+			Hash: tx.Hash().Hex(),
+			// Parse other fields (From, To, Value, etc.) as needed.
+			BlockNumber: int64(num),
+		}
+		if err := newTx.Upsert(ctx, database.Conn); err != nil {
+			log.Printf("Failed to upsert transaction %s: %v\n", tx.Hash().Hex(), err)
+			continue
+		}
+	}
 }

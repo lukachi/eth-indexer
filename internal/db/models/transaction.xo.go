@@ -13,6 +13,7 @@ type Transaction struct {
 	To          string `json:"to"`           // to
 	Value       string `json:"value"`        // value
 	BlockNumber int64  `json:"block_number"` // block_number
+	Timestamp   int64  `json:"timestamp"`    // timestamp
 	// xo fields
 	_exists, _deleted bool
 }
@@ -38,13 +39,13 @@ func (t *Transaction) Insert(ctx context.Context, db DB) error {
 	}
 	// insert (manual)
 	const sqlstr = `INSERT INTO public.transactions (` +
-		`hash, from, to, value, block_number` +
+		`hash, from, to, value, block_number, timestamp` +
 		`) VALUES (` +
-		`$1, $2, $3, $4, $5` +
+		`$1, $2, $3, $4, $5, $6` +
 		`)`
 	// run
-	logf(sqlstr, t.Hash, t.From, t.To, t.Value, t.BlockNumber)
-	if _, err := db.ExecContext(ctx, sqlstr, t.Hash, t.From, t.To, t.Value, t.BlockNumber); err != nil {
+	logf(sqlstr, t.Hash, t.From, t.To, t.Value, t.BlockNumber, t.Timestamp)
+	if _, err := db.ExecContext(ctx, sqlstr, t.Hash, t.From, t.To, t.Value, t.BlockNumber, t.Timestamp); err != nil {
 		return logerror(err)
 	}
 	// set exists
@@ -62,11 +63,11 @@ func (t *Transaction) Update(ctx context.Context, db DB) error {
 	}
 	// update with composite primary key
 	const sqlstr = `UPDATE public.transactions SET ` +
-		`from = $1, to = $2, value = $3, block_number = $4 ` +
-		`WHERE hash = $5`
+		`from = $1, to = $2, value = $3, block_number = $4, timestamp = $5 ` +
+		`WHERE hash = $6`
 	// run
-	logf(sqlstr, t.From, t.To, t.Value, t.BlockNumber, t.Hash)
-	if _, err := db.ExecContext(ctx, sqlstr, t.From, t.To, t.Value, t.BlockNumber, t.Hash); err != nil {
+	logf(sqlstr, t.From, t.To, t.Value, t.BlockNumber, t.Timestamp, t.Hash)
+	if _, err := db.ExecContext(ctx, sqlstr, t.From, t.To, t.Value, t.BlockNumber, t.Timestamp, t.Hash); err != nil {
 		return logerror(err)
 	}
 	return nil
@@ -88,16 +89,16 @@ func (t *Transaction) Upsert(ctx context.Context, db DB) error {
 	}
 	// upsert
 	const sqlstr = `INSERT INTO public.transactions (` +
-		`hash, from, to, value, block_number` +
+		`hash, from, to, value, block_number, timestamp` +
 		`) VALUES (` +
-		`$1, $2, $3, $4, $5` +
+		`$1, $2, $3, $4, $5, $6` +
 		`)` +
 		` ON CONFLICT (hash) DO ` +
 		`UPDATE SET ` +
-		`from = EXCLUDED.from, to = EXCLUDED.to, value = EXCLUDED.value, block_number = EXCLUDED.block_number `
+		`from = EXCLUDED.from, to = EXCLUDED.to, value = EXCLUDED.value, block_number = EXCLUDED.block_number, timestamp = EXCLUDED.timestamp `
 	// run
-	logf(sqlstr, t.Hash, t.From, t.To, t.Value, t.BlockNumber)
-	if _, err := db.ExecContext(ctx, sqlstr, t.Hash, t.From, t.To, t.Value, t.BlockNumber); err != nil {
+	logf(sqlstr, t.Hash, t.From, t.To, t.Value, t.BlockNumber, t.Timestamp)
+	if _, err := db.ExecContext(ctx, sqlstr, t.Hash, t.From, t.To, t.Value, t.BlockNumber, t.Timestamp); err != nil {
 		return logerror(err)
 	}
 	// set exists
@@ -132,7 +133,7 @@ func (t *Transaction) Delete(ctx context.Context, db DB) error {
 func TransactionByHash(ctx context.Context, db DB, hash string) (*Transaction, error) {
 	// query
 	const sqlstr = `SELECT ` +
-		`hash, from, to, value, block_number ` +
+		`hash, from, to, value, block_number, timestamp ` +
 		`FROM public.transactions ` +
 		`WHERE hash = $1`
 	// run
@@ -140,7 +141,7 @@ func TransactionByHash(ctx context.Context, db DB, hash string) (*Transaction, e
 	t := Transaction{
 		_exists: true,
 	}
-	if err := db.QueryRowContext(ctx, sqlstr, hash).Scan(&t.Hash, &t.From, &t.To, &t.Value, &t.BlockNumber); err != nil {
+	if err := db.QueryRowContext(ctx, sqlstr, hash).Scan(&t.Hash, &t.From, &t.To, &t.Value, &t.BlockNumber, &t.Timestamp); err != nil {
 		return nil, logerror(err)
 	}
 	return &t, nil

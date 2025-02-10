@@ -3,15 +3,17 @@ using TypeSpec.Http;
 
 namespace EthIndexer;
 
+model BlockAttributes {
+    number: integer;
+    hash: string;
+    parentHash: string;
+    timestamp: integer;
+}
+
 model Block {
     id: string;
     type: string;
-    attributes: {
-        number: integer;
-        hash: string;
-        parentHash: string;
-        timestamp: integer;
-    }
+    attributes: BlockAttributes;
 }
 
 @error

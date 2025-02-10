@@ -23,14 +23,17 @@ const (
 
 // Block defines model for Block.
 type Block struct {
-	Attributes struct {
-		Hash       string `json:"hash"`
-		Number     int    `json:"number"`
-		ParentHash string `json:"parentHash"`
-		Timestamp  int    `json:"timestamp"`
-	} `json:"attributes"`
-	Id   string `json:"id"`
-	Type string `json:"type"`
+	Attributes BlockAttributes `json:"attributes"`
+	Id         string          `json:"id"`
+	Type       string          `json:"type"`
+}
+
+// BlockAttributes defines model for BlockAttributes.
+type BlockAttributes struct {
+	Hash       string `json:"hash"`
+	Number     int    `json:"number"`
+	ParentHash string `json:"parentHash"`
+	Timestamp  int    `json:"timestamp"`
 }
 
 // BlockNotFoundError defines model for BlockNotFoundError.
@@ -44,16 +47,19 @@ type BlockNotFoundErrorCode string
 
 // Transaction defines model for Transaction.
 type Transaction struct {
-	Attributes struct {
-		BlockNumber int    `json:"blockNumber"`
-		From        string `json:"from"`
-		Hash        string `json:"hash"`
-		Timestamp   int    `json:"timestamp"`
-		To          string `json:"to"`
-		Value       string `json:"value"`
-	} `json:"attributes"`
-	Id   string `json:"id"`
-	Type string `json:"type"`
+	Attributes TransactionAttributes `json:"attributes"`
+	Id         string                `json:"id"`
+	Type       string                `json:"type"`
+}
+
+// TransactionAttributes defines model for TransactionAttributes.
+type TransactionAttributes struct {
+	BlockNumber int    `json:"blockNumber"`
+	From        string `json:"from"`
+	Hash        string `json:"hash"`
+	Timestamp   int    `json:"timestamp"`
+	To          string `json:"to"`
+	Value       string `json:"value"`
 }
 
 // TransactionNotFoundError defines model for TransactionNotFoundError.
