@@ -4,6 +4,7 @@ using TypeSpec.Http;
 namespace EthIndexer;
 
 model Links {
+    self?: string;
     first?: string;
     last?: string;
     prev?: string;

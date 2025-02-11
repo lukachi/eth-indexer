@@ -62,6 +62,13 @@ type GetBlocksResponse struct {
 	Meta  *BlocksMeta `json:"meta,omitempty"`
 }
 
+// GetTransactionsResponse defines model for GetTransactionsResponse.
+type GetTransactionsResponse struct {
+	Data  []Transaction     `json:"data"`
+	Links *Links            `json:"links,omitempty"`
+	Meta  *TransactionsMeta `json:"meta,omitempty"`
+}
+
 // InternalServerError defines model for InternalServerError.
 type InternalServerError struct {
 	Code    InternalServerErrorCode `json:"code"`
@@ -77,6 +84,7 @@ type Links struct {
 	Last  *string `json:"last,omitempty"`
 	Next  *string `json:"next,omitempty"`
 	Prev  *string `json:"prev,omitempty"`
+	Self  *string `json:"self,omitempty"`
 }
 
 // Transaction defines model for Transaction.
@@ -105,6 +113,11 @@ type TransactionNotFoundError struct {
 // TransactionNotFoundErrorCode defines model for TransactionNotFoundError.Code.
 type TransactionNotFoundErrorCode string
 
+// TransactionsMeta defines model for TransactionsMeta.
+type TransactionsMeta struct {
+	TotalCount *int `json:"totalCount,omitempty"`
+}
+
 // BlocksGetBlocksParams defines parameters for BlocksGetBlocks.
 type BlocksGetBlocksParams struct {
 	FilterNumber    *int    `form:"filter[number],omitempty" json:"filter[number],omitempty"`
@@ -112,6 +125,16 @@ type BlocksGetBlocksParams struct {
 	FilterTimestamp *int    `form:"filter[timestamp],omitempty" json:"filter[timestamp],omitempty"`
 	PageNumber      *int    `form:"page[number],omitempty" json:"page[number],omitempty"`
 	PageSize        *int    `form:"page[size],omitempty" json:"page[size],omitempty"`
+}
+
+// TransactionsGetTransactionsParams defines parameters for TransactionsGetTransactions.
+type TransactionsGetTransactionsParams struct {
+	FilterFrom        *string `form:"filter[from],omitempty" json:"filter[from],omitempty"`
+	FilterTo          *string `form:"filter[to],omitempty" json:"filter[to],omitempty"`
+	FilterBlockNumber *int    `form:"filter[block_number],omitempty" json:"filter[block_number],omitempty"`
+	FilterTimestamp   *int    `form:"filter[timestamp],omitempty" json:"filter[timestamp],omitempty"`
+	PageNumber        *int    `form:"page[number],omitempty" json:"page[number],omitempty"`
+	PageSize          *int    `form:"page[size],omitempty" json:"page[size],omitempty"`
 }
 
 // ServerInterface represents all server handlers.
@@ -123,8 +146,11 @@ type ServerInterface interface {
 	// (GET /blocks/{blockId})
 	BlocksGetBlock(c *gin.Context, blockId string)
 
-	// (GET /transactions/{transactionId})
-	TransactionsGetTransaction(c *gin.Context, transactionId string)
+	// (GET /transactions)
+	TransactionsGetTransactions(c *gin.Context, params TransactionsGetTransactionsParams)
+
+	// (GET /transactions/{transactionHash})
+	TransactionsGetTransaction(c *gin.Context, transactionHash string)
 }
 
 // ServerInterfaceWrapper converts contexts to parameters.
@@ -218,17 +244,59 @@ func (siw *ServerInterfaceWrapper) BlocksGetBlock(c *gin.Context) {
 	siw.Handler.BlocksGetBlock(c, blockId)
 }
 
-// TransactionsGetTransaction operation middleware
-func (siw *ServerInterfaceWrapper) TransactionsGetTransaction(c *gin.Context) {
+// TransactionsGetTransactions operation middleware
+func (siw *ServerInterfaceWrapper) TransactionsGetTransactions(c *gin.Context) {
 
 	var err error
 
-	// ------------- Path parameter "transactionId" -------------
-	var transactionId string
+	// Parameter object where we will unmarshal all parameters from the context
+	var params TransactionsGetTransactionsParams
 
-	err = runtime.BindStyledParameterWithOptions("simple", "transactionId", c.Param("transactionId"), &transactionId, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	// ------------- Optional query parameter "filter[from]" -------------
+
+	err = runtime.BindQueryParameter("form", false, false, "filter[from]", c.Request.URL.Query(), &params.FilterFrom)
 	if err != nil {
-		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter transactionId: %w", err), http.StatusBadRequest)
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter filter[from]: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "filter[to]" -------------
+
+	err = runtime.BindQueryParameter("form", false, false, "filter[to]", c.Request.URL.Query(), &params.FilterTo)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter filter[to]: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "filter[block_number]" -------------
+
+	err = runtime.BindQueryParameter("form", false, false, "filter[block_number]", c.Request.URL.Query(), &params.FilterBlockNumber)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter filter[block_number]: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "filter[timestamp]" -------------
+
+	err = runtime.BindQueryParameter("form", false, false, "filter[timestamp]", c.Request.URL.Query(), &params.FilterTimestamp)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter filter[timestamp]: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "page[number]" -------------
+
+	err = runtime.BindQueryParameter("form", false, false, "page[number]", c.Request.URL.Query(), &params.PageNumber)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter page[number]: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	// ------------- Optional query parameter "page[size]" -------------
+
+	err = runtime.BindQueryParameter("form", false, false, "page[size]", c.Request.URL.Query(), &params.PageSize)
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter page[size]: %w", err), http.StatusBadRequest)
 		return
 	}
 
@@ -239,7 +307,31 @@ func (siw *ServerInterfaceWrapper) TransactionsGetTransaction(c *gin.Context) {
 		}
 	}
 
-	siw.Handler.TransactionsGetTransaction(c, transactionId)
+	siw.Handler.TransactionsGetTransactions(c, params)
+}
+
+// TransactionsGetTransaction operation middleware
+func (siw *ServerInterfaceWrapper) TransactionsGetTransaction(c *gin.Context) {
+
+	var err error
+
+	// ------------- Path parameter "transactionHash" -------------
+	var transactionHash string
+
+	err = runtime.BindStyledParameterWithOptions("simple", "transactionHash", c.Param("transactionHash"), &transactionHash, runtime.BindStyledParameterOptions{Explode: false, Required: true})
+	if err != nil {
+		siw.ErrorHandler(c, fmt.Errorf("Invalid format for parameter transactionHash: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		middleware(c)
+		if c.IsAborted() {
+			return
+		}
+	}
+
+	siw.Handler.TransactionsGetTransaction(c, transactionHash)
 }
 
 // GinServerOptions provides options for the Gin server.
@@ -271,5 +363,6 @@ func RegisterHandlersWithOptions(router gin.IRouter, si ServerInterface, options
 
 	router.GET(options.BaseURL+"/blocks", wrapper.BlocksGetBlocks)
 	router.GET(options.BaseURL+"/blocks/:blockId", wrapper.BlocksGetBlock)
-	router.GET(options.BaseURL+"/transactions/:transactionId", wrapper.TransactionsGetTransaction)
+	router.GET(options.BaseURL+"/transactions", wrapper.TransactionsGetTransactions)
+	router.GET(options.BaseURL+"/transactions/:transactionHash", wrapper.TransactionsGetTransaction)
 }

@@ -49,12 +49,6 @@ namespace Blocks {
         @query `filter[timestamp]`?: integer,
         @query `page[number]`?: integer,
         @query `page[size]`?: integer
-        // @query filter?: {
-            // number?: integer;
-            // hash?: string;
-            // timestamp?: integer;
-        // },
-        // @query page?: QueryPage;
     ): {
         @statusCode statusCode: 200;
         @body response: GetBlocksResponse;
