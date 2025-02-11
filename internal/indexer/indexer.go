@@ -11,8 +11,10 @@ import (
 	"github.com/ethereum/go-ethereum/ethclient"
 )
 
-func StartIndexer(client *ethclient.Client, database *db.DB) {
-	var lastProcessed uint64 = 0
+// StartIndexer now accepts a starting block number.
+func StartIndexer(client *ethclient.Client, database *db.DB, startBlock uint64) {
+	lastProcessed := startBlock
+	log.Printf("Indexer starting from block %d", lastProcessed)
 	for {
 		header, err := client.HeaderByNumber(context.Background(), nil)
 		if err != nil {
@@ -21,9 +23,9 @@ func StartIndexer(client *ethclient.Client, database *db.DB) {
 			continue
 		}
 		latest := header.Number.Uint64()
-		for i := lastProcessed + 1; i <= latest; i++ {
+		for i := lastProcessed; i <= latest; i++ {
 			processBlock(i, client, database)
-			lastProcessed = i
+			lastProcessed = i + 1
 		}
 		time.Sleep(3 * time.Second)
 	}

@@ -14,6 +14,8 @@ type Config struct {
 	DBHost     string
 	DBPort     string
 	DBName     string
+	Continue   string // expect "true" or "false" (case-insensitive)
+	FromBlock  string // if provided, indexing starts from this block number
 }
 
 func Load() Config {
@@ -29,5 +31,7 @@ func Load() Config {
 		DBHost:     os.Getenv("DB_HOST"),
 		DBPort:     os.Getenv("DB_PORT"),
 		DBName:     os.Getenv("DB_NAME"),
+		Continue:   os.Getenv("CONTINUE"),   // new
+		FromBlock:  os.Getenv("FROM_BLOCK"), // new
 	}
 }
