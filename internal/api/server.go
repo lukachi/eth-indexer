@@ -1,10 +1,14 @@
 package api
 
 import (
-	"github.com/gin-gonic/gin"
+	"github.com/Lavalier/zchi"
+	"github.com/go-chi/chi/v5"
+	"github.com/rs/zerolog/log"
 	"lukachi/eth-indexer/internal/api/handlers/blocks"
 	"lukachi/eth-indexer/internal/api/handlers/transactions"
 	"lukachi/eth-indexer/internal/db"
+	"net/http"
+
 	// Import the generated code from resources.
 	openapi "lukachi/eth-indexer/resources"
 )
@@ -13,28 +17,39 @@ type Server struct {
 	DB *db.DB
 }
 
-func (s *Server) TransactionsGetTransactions(c *gin.Context, params openapi.TransactionsGetTransactionsParams) {
-	transactions.GetTransactions(c, s.DB, params)
+func (s *Server) TransactionsGetTransactions(w http.ResponseWriter, r *http.Request, params openapi.TransactionsGetTransactionsParams) {
+	transactions.GetTransactions(w, r, s.DB, params)
 }
 
-func (s *Server) BlocksGetBlocks(c *gin.Context, params openapi.BlocksGetBlocksParams) {
-	blocks.GetBlocks(c, s.DB, params)
+func (s *Server) BlocksGetBlocks(w http.ResponseWriter, r *http.Request, params openapi.BlocksGetBlocksParams) {
+	blocks.GetBlocks(w, r, s.DB, params)
 }
 
-func (s *Server) BlocksGetBlock(c *gin.Context, blockId string) {
-	blocks.GetBlock(c, s.DB, blockId)
+func (s *Server) BlocksGetBlock(w http.ResponseWriter, r *http.Request, blockId string) {
+	blocks.GetBlock(w, r, s.DB, blockId)
 }
 
-func (s *Server) TransactionsGetTransaction(c *gin.Context, transactionId string) {
-	transactions.GetTransaction(c, s.DB, transactionId)
+func (s *Server) TransactionsGetTransaction(w http.ResponseWriter, r *http.Request, transactionId string) {
+	transactions.GetTransaction(w, r, s.DB, transactionId)
 }
 
 func StartServer(database *db.DB) {
 	s := &Server{DB: database}
-	router := gin.Default()
-	openapi.RegisterHandlers(router, s)
-	err := router.Run(":8089")
+	router := chi.NewRouter()
+
+	middlewares := make([]openapi.MiddlewareFunc, 0)
+	middlewares = append(middlewares, zchi.Logger(log.Logger))
+
+	handler := openapi.HandlerWithOptions(s, openapi.ChiServerOptions{
+		BaseRouter:  router,
+		Middlewares: middlewares,
+		ErrorHandlerFunc: func(w http.ResponseWriter, r *http.Request, err error) {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+		},
+	})
+
+	err := http.ListenAndServe(":8089", handler)
 	if err != nil {
-		panic(err)
+		return
 	}
 }

@@ -2,7 +2,7 @@ package indexer
 
 import (
 	"context"
-	"log"
+	"github.com/rs/zerolog/log"
 	"lukachi/eth-indexer/internal/db"
 	"lukachi/eth-indexer/internal/db/models"
 	"math/big"
@@ -18,7 +18,7 @@ func StartIndexer(client *ethclient.Client, database *db.DB, startBlock uint64) 
 	for {
 		header, err := client.HeaderByNumber(context.Background(), nil)
 		if err != nil {
-			log.Println("Error fetching latest header:", err)
+			log.Error().Msg("Error fetching latest header:")
 			time.Sleep(5 * time.Second)
 			continue
 		}
@@ -38,7 +38,7 @@ func processBlock(number uint64, client *ethclient.Client, database *db.DB) {
 	// Fetch the block from the Ethereum node.
 	block, err := client.BlockByNumber(ctx, blockNumber)
 	if err != nil {
-		log.Printf("Failed to fetch block %d: %v\n", number, err)
+		log.Error().Msgf("Failed to fetch block by number %d: %v", number, err)
 		return
 	}
 
@@ -59,11 +59,11 @@ func processBlock(number uint64, client *ethclient.Client, database *db.DB) {
 
 	// Use Upsert (or Save) to insert/update the block in the DB.
 	if err := newBlock.Upsert(ctx, database.Conn); err != nil {
-		log.Printf("Failed to upsert block %d: %v\n", number, err)
+		log.Error().Msgf("Failed to upsert block %d: %v", number, err)
 		return
 	}
 
-	log.Printf("Processed and saved block %d\n", number)
+	log.Info().Msgf("Processed and saved block %d", number)
 
 	// Optionally, if you want to process transactions in the block:
 	for _, tx := range block.Transactions() {
@@ -74,7 +74,7 @@ func processBlock(number uint64, client *ethclient.Client, database *db.DB) {
 			BlockNumber: int64(num),
 		}
 		if err := newTx.Upsert(ctx, database.Conn); err != nil {
-			log.Printf("Failed to upsert transaction %s: %v\n", tx.Hash().Hex(), err)
+			log.Error().Msgf("Failed to upsert transaction %s: %v\n", tx.Hash().Hex(), err)
 			continue
 		}
 	}

@@ -2,7 +2,8 @@ package blocks
 
 import (
 	"context"
-	"github.com/gin-gonic/gin"
+	"github.com/rs/zerolog/log"
+	"lukachi/eth-indexer/internal/api/helpers"
 	"lukachi/eth-indexer/internal/db"
 	"lukachi/eth-indexer/internal/db/models"
 	openapi "lukachi/eth-indexer/resources"
@@ -10,19 +11,27 @@ import (
 	"strconv"
 )
 
-func GetBlock(c *gin.Context, DB *db.DB, blockId string) {
+func GetBlock(w http.ResponseWriter, r *http.Request, DB *db.DB, blockId string) {
 	// Convert the blockId (string) to an int64
 	number, err := strconv.ParseInt(blockId, 10, 64)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"msg": "Invalid block number format"})
+		log.Error().Msg(err.Error())
+		helpers.RenderErr(w, http.StatusBadRequest, openapi.InternalServerError{
+			Code:    "INVALID_PARAMS",
+			Message: "Invalid block number format",
+		})
 		return
 	}
 
 	// Query the database for the block using xo-generated model function.
 	block, err := models.BlockByNumber(context.Background(), DB.Conn, number)
 	if err != nil {
-		// Depending on the error you could return 404 if no row found.
-		c.JSON(http.StatusNotFound, gin.H{"msg": "Block not found"})
+		log.Error().Msg(err.Error())
+		// TODO: parse error for case with internal errors
+		helpers.RenderErr(w, http.StatusNotFound, openapi.BlockNotFoundError{
+			Code:    "SQL_SCAN_ERROR",
+			Message: "Failed to scan query",
+		})
 		return
 	}
 
@@ -38,5 +47,5 @@ func GetBlock(c *gin.Context, DB *db.DB, blockId string) {
 		},
 	}
 
-	c.JSON(http.StatusOK, resBlock)
+	helpers.Render(w, http.StatusOK, resBlock)
 }

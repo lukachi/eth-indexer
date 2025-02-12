@@ -1,5 +1,5 @@
 package: resources
 generate:
-  - gin-server
+  - chi-server
   - models
   - types

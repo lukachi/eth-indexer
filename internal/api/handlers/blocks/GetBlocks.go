@@ -4,7 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"github.com/Masterminds/squirrel"
-	"github.com/gin-gonic/gin"
+	"github.com/rs/zerolog/log"
+	"lukachi/eth-indexer/internal/api/helpers"
 	"lukachi/eth-indexer/internal/db"
 	"lukachi/eth-indexer/internal/db/models"
 	openapi "lukachi/eth-indexer/resources"
@@ -12,7 +13,7 @@ import (
 	"strconv"
 )
 
-func GetBlocks(c *gin.Context, DB *db.DB, params openapi.BlocksGetBlocksParams) {
+func GetBlocks(w http.ResponseWriter, r *http.Request, DB *db.DB, params openapi.BlocksGetBlocksParams) {
 	pageNumber := 1
 	if params.PageNumber != nil {
 		pageNumber = *params.PageNumber
@@ -48,7 +49,8 @@ func GetBlocks(c *gin.Context, DB *db.DB, params openapi.BlocksGetBlocksParams) 
 
 	sqlString, args, err := builder.ToSql()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, openapi.InternalServerError{
+		log.Error().Msg(err.Error())
+		helpers.RenderErr(w, http.StatusInternalServerError, openapi.InternalServerError{
 			Code:    "SQL_BUILD_ERROR",
 			Message: "Failed to build sql string",
 		})
@@ -57,19 +59,23 @@ func GetBlocks(c *gin.Context, DB *db.DB, params openapi.BlocksGetBlocksParams) 
 
 	rows, err := DB.Conn.QueryContext(context.Background(), sqlString, args...)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, openapi.InternalServerError{
+		log.Error().Msg(err.Error())
+		helpers.RenderErr(w, http.StatusInternalServerError, openapi.InternalServerError{
 			Code:    "SQL_EXEC_ERROR",
 			Message: "Failed to exec sql string",
 		})
+		return
 	}
 
 	defer func(rows *sql.Rows) {
 		err := rows.Close()
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, openapi.InternalServerError{
+			log.Error().Msg(err.Error())
+			helpers.RenderErr(w, http.StatusInternalServerError, openapi.InternalServerError{
 				Code:    "SQL_CLOSE_ERROR",
 				Message: "Failed to close rows",
 			})
+			return
 		}
 	}(rows)
 
@@ -77,28 +83,34 @@ func GetBlocks(c *gin.Context, DB *db.DB, params openapi.BlocksGetBlocksParams) 
 	for rows.Next() {
 		var block models.Block
 		if err := rows.Scan(&block.Number, &block.Hash, &block.ParentHash, &block.Timestamp); err != nil {
-			c.JSON(http.StatusInternalServerError, openapi.InternalServerError{
+			log.Error().Msg(err.Error())
+			helpers.RenderErr(w, http.StatusInternalServerError, openapi.InternalServerError{
 				Code:    "SQL_SCAN_ERROR",
 				Message: "failed scanning row",
 			})
+			return
 		}
 		blocks = append(blocks, block)
 	}
 
 	countSqlString, countArgs, err := countBuilder.ToSql()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, openapi.InternalServerError{
+		log.Error().Msg(err.Error())
+		helpers.RenderErr(w, http.StatusInternalServerError, openapi.InternalServerError{
 			Code:    "SQL_EXEC_ERROR",
 			Message: "Failed to build count sql string",
 		})
+		return
 	}
 
 	var totalCount int64
 	if err := DB.Conn.QueryRowContext(context.Background(), countSqlString, countArgs...).Scan(&totalCount); err != nil {
-		c.JSON(http.StatusInternalServerError, openapi.InternalServerError{
+		log.Error().Msg(err.Error())
+		helpers.RenderErr(w, http.StatusInternalServerError, openapi.InternalServerError{
 			Code:    "SQL_EXEC_ERROR",
 			Message: "Failed to query and scan count sql string",
 		})
+		return
 	}
 
 	var resBlocks []openapi.Block
@@ -119,7 +131,7 @@ func GetBlocks(c *gin.Context, DB *db.DB, params openapi.BlocksGetBlocksParams) 
 		resBlocks = []openapi.Block{}
 	}
 
-	baseUrl := c.Request.URL.Path
+	baseUrl := r.URL.Query().Get("url")
 
 	selfPage := baseUrl + "?page[number]=" + strconv.Itoa(pageNumber) + "&page[size]=" + strconv.Itoa(pageSize)
 	firstPage := baseUrl + "?page[number]=1&page[size]=20"
@@ -146,9 +158,10 @@ func GetBlocks(c *gin.Context, DB *db.DB, params openapi.BlocksGetBlocksParams) 
 		TotalCount: func(v int) *int { return &v }(int(totalCount)),
 	}
 
-	c.JSON(http.StatusOK, openapi.GetBlocksResponse{
+	resp := openapi.GetBlocksResponse{
 		Data:  resBlocks,
-		Links: &links,
 		Meta:  &meta,
-	})
+		Links: &links,
+	}
+	helpers.Render(w, http.StatusOK, resp)
 }

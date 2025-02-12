@@ -3,7 +3,9 @@ package transactions
 import (
 	"context"
 	"github.com/Masterminds/squirrel"
-	"github.com/gin-gonic/gin"
+	"github.com/pkg/errors"
+	"github.com/rs/zerolog/log"
+	"lukachi/eth-indexer/internal/api/helpers"
 	"lukachi/eth-indexer/internal/db"
 	"lukachi/eth-indexer/internal/db/models"
 	openapi "lukachi/eth-indexer/resources"
@@ -11,7 +13,7 @@ import (
 	"strconv"
 )
 
-func GetTransactions(c *gin.Context, DB *db.DB, params openapi.TransactionsGetTransactionsParams) {
+func GetTransactions(w http.ResponseWriter, r *http.Request, DB *db.DB, params openapi.TransactionsGetTransactionsParams) {
 	pageNumber := 1
 	if params.PageNumber != nil {
 		pageNumber = *params.PageNumber
@@ -47,7 +49,8 @@ func GetTransactions(c *gin.Context, DB *db.DB, params openapi.TransactionsGetTr
 
 	sqlString, args, err := builder.ToSql()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, openapi.InternalServerError{
+		log.Error().Msg(errors.Wrap(err, "error building sql string").Error())
+		helpers.RenderErr(w, http.StatusInternalServerError, openapi.InternalServerError{
 			Code:    "SQL_BUILD_ERROR",
 			Message: "Failed to build SQL query string",
 		})
@@ -56,7 +59,8 @@ func GetTransactions(c *gin.Context, DB *db.DB, params openapi.TransactionsGetTr
 
 	rows, err := DB.Conn.QueryContext(context.Background(), sqlString, args...)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, openapi.InternalServerError{
+		log.Error().Msg(errors.Wrap(err, "error executing SQL query").Error())
+		helpers.RenderErr(w, http.StatusInternalServerError, openapi.InternalServerError{
 			Code:    "SQL_EXEC_ERROR",
 			Message: "Failed to execute SQL query",
 		})
@@ -68,7 +72,8 @@ func GetTransactions(c *gin.Context, DB *db.DB, params openapi.TransactionsGetTr
 	for rows.Next() {
 		var transaction models.Transaction
 		if err := rows.Scan(&transaction.Hash, &transaction.Hash, &transaction.From, &transaction.To, &transaction.BlockNumber, &transaction.Value, &transaction.Timestamp); err != nil {
-			c.JSON(http.StatusInternalServerError, openapi.InternalServerError{
+			log.Error().Msg(errors.Wrap(err, "error scaning transaction row").Error())
+			helpers.RenderErr(w, http.StatusInternalServerError, openapi.InternalServerError{
 				Code:    "SQL_SCAN_ERROR",
 				Message: "Failed to scan transaction row",
 			})
@@ -79,7 +84,8 @@ func GetTransactions(c *gin.Context, DB *db.DB, params openapi.TransactionsGetTr
 
 	countSqlString, countArgs, err := countBuilder.ToSql()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, openapi.InternalServerError{
+		log.Error().Msg(errors.Wrap(err, "error executing SQL count query").Error())
+		helpers.RenderErr(w, http.StatusInternalServerError, openapi.InternalServerError{
 			Code:    "SQL_COUNT_BUILD_ERROR",
 			Message: "Failed to build SQL count query",
 		})
@@ -88,7 +94,8 @@ func GetTransactions(c *gin.Context, DB *db.DB, params openapi.TransactionsGetTr
 
 	var totalCount int64
 	if err := DB.Conn.QueryRowContext(context.Background(), countSqlString, countArgs...).Scan(&totalCount); err != nil {
-		c.JSON(http.StatusInternalServerError, openapi.InternalServerError{
+		log.Error().Msg(errors.Wrap(err, "error executing SQL count query").Error())
+		helpers.RenderErr(w, http.StatusInternalServerError, openapi.InternalServerError{
 			Code:    "SQL_COUNT_EXEC_ERROR",
 			Message: "Failed to execute SQL count query",
 		})
@@ -115,7 +122,7 @@ func GetTransactions(c *gin.Context, DB *db.DB, params openapi.TransactionsGetTr
 		resTransactions = []openapi.Transaction{}
 	}
 
-	baseUrl := c.Request.URL.Path
+	baseUrl := r.URL.Query().Get("url")
 
 	// Generate the current page number with query parameters for consistency
 
@@ -144,7 +151,7 @@ func GetTransactions(c *gin.Context, DB *db.DB, params openapi.TransactionsGetTr
 		TotalCount: func(v int) *int { return &v }(int(totalCount)),
 	}
 
-	c.JSON(http.StatusOK, openapi.GetTransactionsResponse{
+	helpers.Render(w, http.StatusOK, openapi.GetTransactionsResponse{
 		Data:  resTransactions,
 		Links: &links,
 		Meta:  &meta,
