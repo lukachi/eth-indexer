@@ -5,6 +5,11 @@ using TypeSpec.Http;
 
 namespace EthIndexer;
 
+enum BlockQuerySort {
+    number,
+    timestamp,
+}
+
 model BlockAttributes {
     number: integer;
     hash: string;
@@ -47,6 +52,7 @@ namespace Blocks {
         @query `filter[number]`?: integer,
         @query `filter[hash]`?: string,
         @query `filter[timestamp]`?: integer,
+        @query `sort`?: BlockQuerySort,
         @query `page[number]`?: integer,
         @query `page[size]`?: integer
     ): {

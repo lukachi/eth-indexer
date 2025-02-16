@@ -44,6 +44,16 @@ func GetBlocks(w http.ResponseWriter, r *http.Request, params openapi.BlocksGetB
 		countBuilder = countBuilder.Where(squirrel.Eq{"timestamp": *params.FilterTimestamp})
 	}
 
+	if params.Sort != nil {
+		if *params.Sort == "Number" {
+			builder = builder.OrderBy("number ASC")
+		}
+
+		if *params.Sort == "Timestamp" {
+			builder = builder.OrderBy("timestamp ASC")
+		}
+	}
+
 	builder = builder.OrderBy("number ASC")
 
 	offset := (pageNumber - 1) * pageSize

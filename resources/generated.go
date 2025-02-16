@@ -16,6 +16,12 @@ const (
 	BLOCKNOTFOUND BlockNotFoundErrorCode = "BLOCK_NOT_FOUND"
 )
 
+// Defines values for BlockQuerySort.
+const (
+	Number    BlockQuerySort = "number"
+	Timestamp BlockQuerySort = "timestamp"
+)
+
 // Defines values for InternalServerErrorCode.
 const (
 	INTERNALSERVERERROR InternalServerErrorCode = "INTERNAL_SERVER_ERROR"
@@ -49,6 +55,9 @@ type BlockNotFoundError struct {
 
 // BlockNotFoundErrorCode defines model for BlockNotFoundError.Code.
 type BlockNotFoundErrorCode string
+
+// BlockQuerySort defines model for BlockQuerySort.
+type BlockQuerySort string
 
 // BlocksMeta defines model for BlocksMeta.
 type BlocksMeta struct {
@@ -120,11 +129,12 @@ type TransactionsMeta struct {
 
 // BlocksGetBlocksParams defines parameters for BlocksGetBlocks.
 type BlocksGetBlocksParams struct {
-	FilterNumber    *int    `form:"filter[number],omitempty" json:"filter[number],omitempty"`
-	FilterHash      *string `form:"filter[hash],omitempty" json:"filter[hash],omitempty"`
-	FilterTimestamp *int    `form:"filter[timestamp],omitempty" json:"filter[timestamp],omitempty"`
-	PageNumber      *int    `form:"page[number],omitempty" json:"page[number],omitempty"`
-	PageSize        *int    `form:"page[size],omitempty" json:"page[size],omitempty"`
+	FilterNumber    *int            `form:"filter[number],omitempty" json:"filter[number],omitempty"`
+	FilterHash      *string         `form:"filter[hash],omitempty" json:"filter[hash],omitempty"`
+	FilterTimestamp *int            `form:"filter[timestamp],omitempty" json:"filter[timestamp],omitempty"`
+	Sort            *BlockQuerySort `form:"sort,omitempty" json:"sort,omitempty"`
+	PageNumber      *int            `form:"page[number],omitempty" json:"page[number],omitempty"`
+	PageSize        *int            `form:"page[size],omitempty" json:"page[size],omitempty"`
 }
 
 // TransactionsGetTransactionsParams defines parameters for TransactionsGetTransactions.
@@ -215,6 +225,14 @@ func (siw *ServerInterfaceWrapper) BlocksGetBlocks(w http.ResponseWriter, r *htt
 	err = runtime.BindQueryParameter("form", false, false, "filter[timestamp]", r.URL.Query(), &params.FilterTimestamp)
 	if err != nil {
 		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "filter[timestamp]", Err: err})
+		return
+	}
+
+	// ------------- Optional query parameter "sort" -------------
+
+	err = runtime.BindQueryParameter("form", false, false, "sort", r.URL.Query(), &params.Sort)
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "sort", Err: err})
 		return
 	}
 
