@@ -3,6 +3,7 @@ package transactions
 import (
 	"context"
 	"github.com/rs/zerolog/log"
+	context2 "lukachi/eth-indexer/internal/api/context"
 	"lukachi/eth-indexer/internal/api/helpers"
 	"lukachi/eth-indexer/internal/db"
 	"lukachi/eth-indexer/internal/db/models"
@@ -10,9 +11,10 @@ import (
 	"net/http"
 )
 
-func GetTransaction(w http.ResponseWriter, r *http.Request, DB *db.DB, transactionId string) {
+func GetTransaction(w http.ResponseWriter, r *http.Request, transactionId string) {
+	dbCtx := r.Context().Value(context2.DBCtxKey).(db.DB)
 	// Query the database for the transaction by hash using xo-generated function.
-	tx, err := models.TransactionByHash(context.Background(), DB.Conn, transactionId)
+	tx, err := models.TransactionByHash(context.Background(), dbCtx.Conn, transactionId)
 	if err != nil {
 		log.Error().Msg(err.Error())
 		helpers.RenderErr(w, http.StatusNotFound, err)

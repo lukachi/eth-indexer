@@ -4,6 +4,7 @@ import (
 	"github.com/Lavalier/zchi"
 	"github.com/go-chi/chi/v5"
 	"github.com/rs/zerolog/log"
+	"lukachi/eth-indexer/internal/api/context"
 	"lukachi/eth-indexer/internal/api/handlers/blocks"
 	"lukachi/eth-indexer/internal/api/handlers/transactions"
 	"lukachi/eth-indexer/internal/db"
@@ -18,24 +19,30 @@ type Server struct {
 }
 
 func (s *Server) TransactionsGetTransactions(w http.ResponseWriter, r *http.Request, params openapi.TransactionsGetTransactionsParams) {
-	transactions.GetTransactions(w, r, s.DB, params)
+	transactions.GetTransactions(w, r, params)
 }
 
 func (s *Server) BlocksGetBlocks(w http.ResponseWriter, r *http.Request, params openapi.BlocksGetBlocksParams) {
-	blocks.GetBlocks(w, r, s.DB, params)
+	blocks.GetBlocks(w, r, params)
 }
 
 func (s *Server) BlocksGetBlock(w http.ResponseWriter, r *http.Request, blockId string) {
-	blocks.GetBlock(w, r, s.DB, blockId)
+	blocks.GetBlock(w, r, blockId)
 }
 
 func (s *Server) TransactionsGetTransaction(w http.ResponseWriter, r *http.Request, transactionId string) {
-	transactions.GetTransaction(w, r, s.DB, transactionId)
+	transactions.GetTransaction(w, r, transactionId)
 }
 
 func StartServer(database *db.DB) {
 	s := &Server{DB: database}
 	router := chi.NewRouter()
+
+	router.Use(
+		context.CtxMiddleWare(
+			context.CtxDB(*s.DB),
+		),
+	)
 
 	middlewares := make([]openapi.MiddlewareFunc, 0)
 	middlewares = append(middlewares, zchi.Logger(log.Logger))

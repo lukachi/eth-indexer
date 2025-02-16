@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"github.com/Masterminds/squirrel"
 	"github.com/rs/zerolog/log"
+	context2 "lukachi/eth-indexer/internal/api/context"
 	"lukachi/eth-indexer/internal/api/helpers"
 	"lukachi/eth-indexer/internal/db"
 	"lukachi/eth-indexer/internal/db/models"
@@ -13,7 +14,8 @@ import (
 	"strconv"
 )
 
-func GetBlocks(w http.ResponseWriter, r *http.Request, DB *db.DB, params openapi.BlocksGetBlocksParams) {
+func GetBlocks(w http.ResponseWriter, r *http.Request, params openapi.BlocksGetBlocksParams) {
+	dbCtx := r.Context().Value(context2.DBCtxKey).(db.DB)
 	pageNumber := 1
 	if params.PageNumber != nil {
 		pageNumber = *params.PageNumber
@@ -24,8 +26,8 @@ func GetBlocks(w http.ResponseWriter, r *http.Request, DB *db.DB, params openapi
 		pageSize = *params.PageSize
 	}
 
-	builder := DB.SqlBuilder.Select("number", "hash", "parent_hash", "timestamp").From("public.blocks")
-	countBuilder := DB.SqlBuilder.Select("count(*)").From("public.blocks")
+	builder := dbCtx.SqlBuilder.Select("number", "hash", "parent_hash", "timestamp").From("public.blocks")
+	countBuilder := dbCtx.SqlBuilder.Select("count(*)").From("public.blocks")
 
 	if params.FilterNumber != nil {
 		builder = builder.Where(squirrel.Eq{"number": *params.FilterNumber})
@@ -57,7 +59,7 @@ func GetBlocks(w http.ResponseWriter, r *http.Request, DB *db.DB, params openapi
 		return
 	}
 
-	rows, err := DB.Conn.QueryContext(context.Background(), sqlString, args...)
+	rows, err := dbCtx.Conn.QueryContext(context.Background(), sqlString, args...)
 	if err != nil {
 		log.Error().Msg(err.Error())
 		helpers.RenderErr(w, http.StatusInternalServerError, openapi.InternalServerError{
@@ -104,7 +106,7 @@ func GetBlocks(w http.ResponseWriter, r *http.Request, DB *db.DB, params openapi
 	}
 
 	var totalCount int64
-	if err := DB.Conn.QueryRowContext(context.Background(), countSqlString, countArgs...).Scan(&totalCount); err != nil {
+	if err := dbCtx.Conn.QueryRowContext(context.Background(), countSqlString, countArgs...).Scan(&totalCount); err != nil {
 		log.Error().Msg(err.Error())
 		helpers.RenderErr(w, http.StatusInternalServerError, openapi.InternalServerError{
 			Code:    "SQL_EXEC_ERROR",

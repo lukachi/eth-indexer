@@ -5,6 +5,7 @@ import (
 	"github.com/Masterminds/squirrel"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog/log"
+	context2 "lukachi/eth-indexer/internal/api/context"
 	"lukachi/eth-indexer/internal/api/helpers"
 	"lukachi/eth-indexer/internal/db"
 	"lukachi/eth-indexer/internal/db/models"
@@ -13,7 +14,9 @@ import (
 	"strconv"
 )
 
-func GetTransactions(w http.ResponseWriter, r *http.Request, DB *db.DB, params openapi.TransactionsGetTransactionsParams) {
+func GetTransactions(w http.ResponseWriter, r *http.Request, params openapi.TransactionsGetTransactionsParams) {
+	dbCtx := r.Context().Value(context2.DBCtxKey).(db.DB)
+
 	pageNumber := 1
 	if params.PageNumber != nil {
 		pageNumber = *params.PageNumber
@@ -24,8 +27,8 @@ func GetTransactions(w http.ResponseWriter, r *http.Request, DB *db.DB, params o
 		pageSize = *params.PageSize
 	}
 
-	builder := DB.SqlBuilder.Select("*").From("public.transactions")
-	countBuilder := DB.SqlBuilder.Select("count(*)").From("public.transactions")
+	builder := dbCtx.SqlBuilder.Select("*").From("public.transactions")
+	countBuilder := dbCtx.SqlBuilder.Select("count(*)").From("public.transactions")
 
 	if params.FilterFrom != nil {
 		builder = builder.Where(squirrel.Eq{"from_address": *params.FilterFrom})
@@ -57,7 +60,7 @@ func GetTransactions(w http.ResponseWriter, r *http.Request, DB *db.DB, params o
 		return
 	}
 
-	rows, err := DB.Conn.QueryContext(context.Background(), sqlString, args...)
+	rows, err := dbCtx.Conn.QueryContext(context.Background(), sqlString, args...)
 	if err != nil {
 		log.Error().Msg(errors.Wrap(err, "error executing SQL query").Error())
 		helpers.RenderErr(w, http.StatusInternalServerError, openapi.InternalServerError{
@@ -93,7 +96,7 @@ func GetTransactions(w http.ResponseWriter, r *http.Request, DB *db.DB, params o
 	}
 
 	var totalCount int64
-	if err := DB.Conn.QueryRowContext(context.Background(), countSqlString, countArgs...).Scan(&totalCount); err != nil {
+	if err := dbCtx.Conn.QueryRowContext(context.Background(), countSqlString, countArgs...).Scan(&totalCount); err != nil {
 		log.Error().Msg(errors.Wrap(err, "error executing SQL count query").Error())
 		helpers.RenderErr(w, http.StatusInternalServerError, openapi.InternalServerError{
 			Code:    "SQL_COUNT_EXEC_ERROR",

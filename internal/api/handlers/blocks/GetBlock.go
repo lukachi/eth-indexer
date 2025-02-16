@@ -3,6 +3,7 @@ package blocks
 import (
 	"context"
 	"github.com/rs/zerolog/log"
+	context2 "lukachi/eth-indexer/internal/api/context"
 	"lukachi/eth-indexer/internal/api/helpers"
 	"lukachi/eth-indexer/internal/db"
 	"lukachi/eth-indexer/internal/db/models"
@@ -11,7 +12,7 @@ import (
 	"strconv"
 )
 
-func GetBlock(w http.ResponseWriter, r *http.Request, DB *db.DB, blockId string) {
+func GetBlock(w http.ResponseWriter, r *http.Request, blockId string) {
 	// Convert the blockId (string) to an int64
 	number, err := strconv.ParseInt(blockId, 10, 64)
 	if err != nil {
@@ -23,8 +24,10 @@ func GetBlock(w http.ResponseWriter, r *http.Request, DB *db.DB, blockId string)
 		return
 	}
 
+	dbCtx := r.Context().Value(context2.DBCtxKey).(db.DB)
+
 	// Query the database for the block using xo-generated model function.
-	block, err := models.BlockByNumber(context.Background(), DB.Conn, number)
+	block, err := models.BlockByNumber(context.Background(), dbCtx.Conn, number)
 	if err != nil {
 		log.Error().Msg(err.Error())
 		// TODO: parse error for case with internal errors
